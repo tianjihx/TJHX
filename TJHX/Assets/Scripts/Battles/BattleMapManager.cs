@@ -9,29 +9,19 @@ public enum BattleMapTileType
     FreeMove, Enemy, Friend, Unreachable
 }
 
-class BattleMapManager : MonoBehaviour
+class BattleMapManager : Singleton<BattleMapManager>
 {
-    private static BattleMapManager _instance;
-    public static BattleMapManager Instance
-    {
-        get
-        {
-            return _instance;
-        }
-    }
+    public Transform MoveTileContainer;
+    public Transform ReachTileContainer;
+    public Transform AttackTileContainer;
+
 
     private int mapWidth = -1;
     private int mapHeight = -1;
     private BattleMapTileType[,] tileTypeInMap;
 
-    private void Awake()
-    {
-        if (_instance != null)
-        {
-            DestroyImmediate(_instance.gameObject);
-        }
-        _instance = GetComponent<BattleMapManager>();
-    }
+    private List<GameObject> moveTileGOList;
+    private List<GameObject> reachTileGOList;
 
     public void SetMapSize(int width, int height)
     {
@@ -53,22 +43,39 @@ class BattleMapManager : MonoBehaviour
                 tileTypeInMap[i, j] = BattleMapTileType.FreeMove;
             }
         }
+        moveTileGOList = new List<GameObject>();
     }
 
+    public void ClearMoveGrid()
+    {
+        //清除之前的移动范围GameObject
+        if (moveTileGOList == null)
+            return;
+        foreach (var moveTileGo in moveTileGOList)
+        {
+            Destroy(moveTileGo);
+        }
+        moveTileGOList.Clear();
+    }
+
+    //显示移动范围
     public void ShowMoveGrid(Character cht)
     {
-        Debug.Log("cht.position: "+ cht.Position);
-        int stepMax = cht.Speed / 10 + cht.BaseMove;
-        Dictionary<Point, int> result = new Dictionary<Point, int>();
+        ClearMoveGrid();
+        //Debug.Log("cht.position: "+ cht.Position);
+        uint stepMax = cht.Speed / 10 + cht.BaseMove;
+        Dictionary<Point, uint> result = new Dictionary<Point, uint>();
         BFSFindMoveGrid(cht.Position, 0, stepMax, result);
         foreach (var pair in result)
         {
-            GameObject moveTileGO = Instantiate(Resources.Load("move_tile")) as GameObject;
+            //Debug.Log(pair);
+            var moveTileGO = ResourcesManager.CreateByRid(R.Prefab.MoveTile, MoveTileContainer);
             moveTileGO.transform.position = pair.Key.ToVector3();
+            moveTileGOList.Add(moveTileGO);
         }
     }
 
-    private void BFSFindMoveGrid(Point currentPos, int stepsMoved, int stepMax, Dictionary<Point, int> result)
+    private void BFSFindMoveGrid(Point currentPos, uint stepsMoved, uint stepMax, Dictionary<Point, uint> result)
     {
         if (!result.ContainsKey(currentPos))
             result.Add(currentPos, stepsMoved);
@@ -107,6 +114,47 @@ class BattleMapManager : MonoBehaviour
             return true;
         else
             return false;
+    }
+
+    public void ShowWeaponReachRange(Character cht)
+    {
+        if (reachTileGOList == null)
+        {
+            reachTileGOList = new List<GameObject>();
+        }
+        Tool.ClearAndDestoryGO(reachTileGOList);
+        Debug.Log(cht.Position.ToVector3());
+        AttackTileContainer.position = cht.Position.ToVector3();
+        cht.weaponArmed = new Weapon();
+        cht.weaponArmed.AttackRange = new bool[,]
+        {
+            { true, true, true},
+            { true, true, true}
+        };
+        int middlePos = cht.weaponArmed.AttackRange.GetLength(0) / 2 + 1;
+        for (int i = 0; i < cht.weaponArmed.AttackRange.GetLength(0); ++i)
+        {
+            for (int j = 0; j < cht.weaponArmed.AttackRange.GetLength(1); ++j)
+            {
+                var reachGO = ResourcesManager.CreateByRid(R.Prefab.ReachTile, ReachTileContainer);
+                if (cht.Direction == DirectionType.Up)
+                    reachGO.transform.position = new Point(i - middlePos, j).ToVector3();
+                else if (cht.Direction == DirectionType.Right)
+                    reachGO.transform.position = new Point(j, i - middlePos).ToVector3();
+                else if (cht.Direction == DirectionType.Down)
+                    reachGO.transform.position = - new Point(i - middlePos, j).ToVector3();
+                else if (cht.Direction == DirectionType.Left)
+                    reachGO.transform.position = - new Point(j, i - middlePos).ToVector3();
+                reachTileGOList.Add(reachGO);
+            }
+        }
+
+        
+    }
+
+    public void HideWeaponReachRange()
+    {
+        Tool.ClearAndDestoryGO(reachTileGOList);
     }
 
 }

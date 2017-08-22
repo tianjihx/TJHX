@@ -67,7 +67,6 @@ public struct Point
     {
         return new Vector3(x, 0, y * 2);
     }
-
 }
 
 public enum DirectionType

@@ -6,16 +6,18 @@ using UnityEngine.AI;
 
 public class Character : MonoBehaviour {
 
-    public int HP;
-    public int MP;
-    public int EP;
-    public int Attack;
-    public int Defend;
-    public int Agility;
-    public int Intelligence;
-    public int BaseMove;
-    public int Speed;
-    public int Luck;
+    public uint HP;
+    public uint MP;
+    public uint EP;
+    public uint Attack;
+    public uint Defend;
+    public uint Agility;
+    public uint Intelligence;
+    public uint BaseMove;
+    public uint Speed;
+    public uint Luck;
+
+    public Weapon weaponArmed;
 
     public bool IsMoving = false;
 
@@ -38,6 +40,7 @@ public class Character : MonoBehaviour {
                 .SetEase(Ease.Linear)
                 .OnComplete(() =>
                 {
+                    BattleMapManager.Instance.ShowWeaponReachRange(this);
                     IsMoving = false;
                 });
             //transform.position = new Vector3(_position.x, transform.position.y, _position.y);
@@ -76,6 +79,7 @@ public class Character : MonoBehaviour {
             TurnTo(direction);
             return;
         }
+        BattleMapManager.Instance.HideWeaponReachRange();
         switch (direction)
         {
             case DirectionType.Left:
@@ -94,12 +98,15 @@ public class Character : MonoBehaviour {
         
     }
 
+
     public void TurnTo(DirectionType direction)
     {
+        BattleMapManager.Instance.HideWeaponReachRange();
         Direction = direction;
         IsMoving = true;
         Timer.New(() =>
         {
+            BattleMapManager.Instance.ShowWeaponReachRange(this);
             Debug.Log("turn finish");
             IsMoving = false;
         }, 0.2f).Run();

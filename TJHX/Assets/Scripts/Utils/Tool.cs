@@ -28,6 +28,40 @@ class Tool
         }
         return new Quaternion();
     }
+
+    public static Point Direction2Point(DirectionType direction)
+    {
+        switch (direction)
+        {
+            case DirectionType.Left:
+                return Point.Left;
+            case DirectionType.Up:
+                return Point.Up;
+            case DirectionType.Right:
+                return Point.Right;
+            case DirectionType.Down:
+                return Point.Down;
+        }
+        return Point.Zero;
+    }
+
+    public static void ClearAndDestoryGO<T>(List<T> list) where T : MonoBehaviour
+    {
+        foreach (T t in list)
+        {
+            GameObject.Destroy(t.gameObject);
+        }
+    }
+
+    public static void ClearAndDestoryGO(List<GameObject> list)
+    {
+        if (list == null)
+            return;
+        foreach (var go in list)
+        {
+            GameObject.Destroy(go);
+        }
+    }
 }
 
 class Timer : MonoBehaviour
