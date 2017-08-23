@@ -57,8 +57,10 @@ class DebugTool : MonoBehaviour
             for (int j = 0; j < height; j++)
             {
                 Gizmos.DrawLine(new Vector3(0, 0, j * 2 + offset.y), new Vector3(width, 0, j * 2 + offset.y));
-
             }
         }
+
     }
+
+    
 }

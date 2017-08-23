@@ -9,15 +9,17 @@ public enum BattleMapTileType
     FreeMove, Enemy, Friend, Unreachable
 }
 
-class BattleMapManager : Singleton<BattleMapManager>
+public class BattleMapManager : Singleton<BattleMapManager>
 {
-    public Transform MoveTileContainer;
-    public Transform ReachTileContainer;
-    public Transform AttackTileContainer;
+    public Transform MoveRangeContainer;
+    public Transform AttackGroup;
+    public Transform ReachRangeContainer;
+    public Transform AttackRangeContainer;
 
+    public Character characterWatching;
 
-    private int mapWidth = -1;
-    private int mapHeight = -1;
+    public int mapWidth = 100;
+    public int mapHeight = 100;
     private BattleMapTileType[,] tileTypeInMap;
 
     private List<GameObject> moveTileGOList;
@@ -27,6 +29,16 @@ class BattleMapManager : Singleton<BattleMapManager>
     {
         mapWidth = width;
         mapHeight = height;
+    }
+
+    public Point GetMapSize()
+    {
+        return new Point(mapWidth, mapHeight);
+    }
+
+    protected override void Awake()
+    {
+        base.Awake();
     }
 
     public void Init()
@@ -46,6 +58,16 @@ class BattleMapManager : Singleton<BattleMapManager>
         moveTileGOList = new List<GameObject>();
     }
 
+    public void SetMap(int x, int y, BattleMapTileType tileType)
+    {
+        tileTypeInMap[x, y] = tileType;
+    }
+
+    public BattleMapTileType GetMap(int x, int y)
+    {
+        return tileTypeInMap[x, y];
+    }
+
     public void ClearMoveGrid()
     {
         //清除之前的移动范围GameObject
@@ -59,17 +81,29 @@ class BattleMapManager : Singleton<BattleMapManager>
     }
 
     //显示移动范围
-    public void ShowMoveGrid(Character cht)
+    public void ShowMoveRange()
+    {
+        if (!MoveRangeContainer.gameObject.activeSelf)
+            MoveRangeContainer.gameObject.SetActive(true);
+    }
+
+    public void HideMoveRange()
+    {
+        if (MoveRangeContainer.gameObject.activeSelf)
+            MoveRangeContainer.gameObject.SetActive(false);
+    }
+
+    public void GenerateMoveGrid()
     {
         ClearMoveGrid();
         //Debug.Log("cht.position: "+ cht.Position);
-        uint stepMax = cht.Speed / 10 + cht.BaseMove;
+        uint stepMax = characterWatching.Speed / 10 + characterWatching.BaseMove;
         Dictionary<Point, uint> result = new Dictionary<Point, uint>();
-        BFSFindMoveGrid(cht.Position, 0, stepMax, result);
+        BFSFindMoveGrid(characterWatching.Position, 0, stepMax, result);
         foreach (var pair in result)
         {
             //Debug.Log(pair);
-            var moveTileGO = ResourcesManager.CreateByRid(R.Prefab.MoveTile, MoveTileContainer);
+            var moveTileGO = ResourcesManager.CreateByRid(R.Prefab.MoveTile, MoveRangeContainer);
             moveTileGO.transform.position = pair.Key.ToVector3();
             moveTileGOList.Add(moveTileGO);
         }
@@ -116,45 +150,110 @@ class BattleMapManager : Singleton<BattleMapManager>
             return false;
     }
 
-    public void ShowWeaponReachRange(Character cht)
+    public void ShowWeaponReachRange()
     {
         if (reachTileGOList == null)
         {
             reachTileGOList = new List<GameObject>();
         }
-        Tool.ClearAndDestoryGO(reachTileGOList);
-        Debug.Log(cht.Position.ToVector3());
-        AttackTileContainer.position = cht.Position.ToVector3();
+        if (reachTileGOList.Count != 0)
+            return;
+        Character cht = characterWatching;
+        AttackGroup.position = cht.Position.ToVector3() + Tool.Direction2Point(cht.Direction).ToVector3();
+        #region test_data
         cht.weaponArmed = new Weapon();
         cht.weaponArmed.AttackRange = new bool[,]
         {
             { true, true, true},
-            { true, true, true}
+            { false, true, true}
         };
-        int middlePos = cht.weaponArmed.AttackRange.GetLength(0) / 2 + 1;
+        #endregion
+        int middlePos = cht.weaponArmed.AttackRange.GetLength(0) / 2;
         for (int i = 0; i < cht.weaponArmed.AttackRange.GetLength(0); ++i)
         {
             for (int j = 0; j < cht.weaponArmed.AttackRange.GetLength(1); ++j)
             {
-                var reachGO = ResourcesManager.CreateByRid(R.Prefab.ReachTile, ReachTileContainer);
+                if (!cht.weaponArmed.AttackRange[i, j])
+                    continue;
+                var reachGO = ResourcesManager.CreateByRid(R.Prefab.ReachTile, ReachRangeContainer);
                 if (cht.Direction == DirectionType.Up)
-                    reachGO.transform.position = new Point(i - middlePos, j).ToVector3();
+                    reachGO.transform.localPosition = new Point(middlePos - j, i).ToVector3();
                 else if (cht.Direction == DirectionType.Right)
-                    reachGO.transform.position = new Point(j, i - middlePos).ToVector3();
+                    reachGO.transform.localPosition = new Point(i, j - middlePos).ToVector3();
                 else if (cht.Direction == DirectionType.Down)
-                    reachGO.transform.position = - new Point(i - middlePos, j).ToVector3();
+                    reachGO.transform.localPosition = - new Point(middlePos - j, i).ToVector3();
                 else if (cht.Direction == DirectionType.Left)
-                    reachGO.transform.position = - new Point(j, i - middlePos).ToVector3();
+                    reachGO.transform.localPosition = - new Point(i, j - middlePos).ToVector3();
                 reachTileGOList.Add(reachGO);
             }
         }
-
-        
     }
 
     public void HideWeaponReachRange()
     {
+        if (reachTileGOList.Count == 0)
+            return;
         Tool.ClearAndDestoryGO(reachTileGOList);
     }
 
+    public void WatchCharacter(Character cht)
+    {
+        characterWatching = cht;
+    }
+
+    private void Update()
+    {
+        if (characterWatching == null)
+            return;
+        switch (characterWatching.status)
+        {
+            case CharacterStatus.Idle:
+                ShowMoveRange();
+                ShowWeaponReachRange();
+                break;
+            case CharacterStatus.Moving:
+                HideWeaponReachRange();
+                break;
+            case CharacterStatus.ChooseTarget:
+                HideMoveRange();
+                break;
+            case CharacterStatus.Attacking:
+                break;
+        }
+    }
+
+    #region DEBUG CODE
+
+    public bool debug = false;
+
+    void OnDrawGizmos()
+    {
+        if (debug)
+        {
+
+            for (int i = 0; i < mapWidth; ++i)
+            {
+                for (int j = 0; j < mapHeight; ++j)
+                {
+                    if (tileTypeInMap[i, j] == BattleMapTileType.Enemy)
+                    {
+                        GizmosDrawX(new Point(i, j), new Color(1.0f, 0, 0, 0.5f));
+                    }
+                }
+            }
+        }
+    }
+
+    void GizmosDrawX(Point pos, Color color)
+    {
+        Gizmos.color = color;
+        Vector3 leftDown = pos.ToVector3() + new Vector3(-0.5f, 0, -1);
+        Vector3 rightUp = pos.ToVector3() + new Vector3(0.5f, 0, 1);
+        Vector3 leftUp = pos.ToVector3() + new Vector3(-0.5f, 0, 1);
+        Vector3 rightDown = pos.ToVector3() + new Vector3(0.5f, 0, -1);
+        Gizmos.DrawLine(rightUp, leftDown);
+        Gizmos.DrawLine(leftUp, rightDown);
+
+    }
+    #endregion
 }

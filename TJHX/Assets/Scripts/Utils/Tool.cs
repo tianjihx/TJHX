@@ -61,6 +61,7 @@ class Tool
         {
             GameObject.Destroy(go);
         }
+        list.Clear();
     }
 }
 

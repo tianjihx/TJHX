@@ -4,6 +4,11 @@ using UnityEngine;
 using DG.Tweening;
 using UnityEngine.AI;
 
+public enum CharacterStatus
+{
+    Idle, Moving, ChooseTarget, Attacking
+}
+
 public class Character : MonoBehaviour {
 
     public uint HP;
@@ -19,7 +24,7 @@ public class Character : MonoBehaviour {
 
     public Weapon weaponArmed;
 
-    public bool IsMoving = false;
+    public CharacterStatus status;
 
     
 
@@ -34,16 +39,14 @@ public class Character : MonoBehaviour {
         set
         {
             _position = value;
-            IsMoving = true;
+            status = CharacterStatus.Moving;
             transform
-                .DOLocalMove(new Vector3(_position.x, transform.position.y, _position.y * 2), 0.2f)
+                .DOLocalMove(_position.ToVector3(transform.position.y), 0.2f)
                 .SetEase(Ease.Linear)
                 .OnComplete(() =>
                 {
-                    BattleMapManager.Instance.ShowWeaponReachRange(this);
-                    IsMoving = false;
+                    status = CharacterStatus.Idle;
                 });
-            //transform.position = new Vector3(_position.x, transform.position.y, _position.y);
         }
     }
 
@@ -72,14 +75,13 @@ public class Character : MonoBehaviour {
 
     public void MoveStep(DirectionType direction)
     {
-        if (IsMoving)
+        if (status != CharacterStatus.Idle)
             return;
         if (Direction != direction)
         {
             TurnTo(direction);
             return;
         }
-        BattleMapManager.Instance.HideWeaponReachRange();
         switch (direction)
         {
             case DirectionType.Left:
@@ -101,15 +103,13 @@ public class Character : MonoBehaviour {
 
     public void TurnTo(DirectionType direction)
     {
-        BattleMapManager.Instance.HideWeaponReachRange();
         Direction = direction;
-        IsMoving = true;
+        status = CharacterStatus.Moving;
         Timer.New(() =>
         {
-            BattleMapManager.Instance.ShowWeaponReachRange(this);
             Debug.Log("turn finish");
-            IsMoving = false;
-        }, 0.2f).Run();
+            status = CharacterStatus.Idle;
+        }, 0.1f).Run();
     }
 
     public void MoveTo(Point destPos)

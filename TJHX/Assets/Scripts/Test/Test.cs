@@ -22,7 +22,14 @@ public class Test : MonoBehaviour {
         BattleMapManager.Instance.ClearMoveGrid();
         BattleMapManager.Instance.SetMapSize(100, 100);
         BattleMapManager.Instance.Init();
-        BattleMapManager.Instance.ShowMoveGrid(character);
-        
+        BattleMapManager.Instance.SetMap(49, 8, BattleMapTileType.Enemy);
+        BattleMapManager.Instance.WatchCharacter(character);
+        BattleMapManager.Instance.GenerateMoveGrid();
+    }
+
+    public void OnTestDbClick()
+    {
+        var a = DB.GetTestData();
+        Debug.Log(a.a);
     }
 }
