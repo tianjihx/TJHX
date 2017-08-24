@@ -49,14 +49,23 @@ class DebugTool : MonoBehaviour
     {
         if (IsShowGrid)
         {
+            Point start, end;
             Gizmos.color = new Color(0, 0, 1.0f, 0.5f);
-            for (int i = 0; i < width; i++)
+            for (int i = 0 ; i < width; i++)
             {
-                Gizmos.DrawLine(new Vector3(i + offset.x, 0, 0), new Vector3(i + offset.x, 0, height));
+                start.x = i;
+                start.y = 0;
+                end.x = i;
+                end.y = (int)height;
+                Gizmos.DrawLine(start.ToVector3() + new Vector3(offset.x, 0, offset.y), end.ToVector3() + new Vector3(offset.x, 0, offset.y));
             }
-            for (int j = 0; j < height; j++)
+            for (int j = 0 ; j < height; j++)
             {
-                Gizmos.DrawLine(new Vector3(0, 0, j * 2 + offset.y), new Vector3(width, 0, j * 2 + offset.y));
+                start.x = 0;
+                start.y = j;
+                end.x = (int)width;
+                end.y = j;
+                Gizmos.DrawLine(start.ToVector3() + new Vector3(offset.x, 0, offset.y), end.ToVector3() + new Vector3(offset.x, 0, offset.y));
             }
         }
 

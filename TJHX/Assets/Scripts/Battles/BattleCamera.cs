@@ -2,15 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Camera))]
-[ExecuteInEditMode]
 public class BattleCamera : MonoBehaviour {
 
     private Camera cam;
+    private Character characterWahcing;
 
     private void Awake()
     {
-        cam = GetComponent<Camera>();
+        cam = GetComponentInChildren<Camera>();
     }
 
     // Use this for initialization
@@ -19,7 +18,14 @@ public class BattleCamera : MonoBehaviour {
 	}
 
     // Update is called once per frame
-    void Update () {
-		
-	}
+    void LateUpdate () {
+        if (characterWahcing == null)
+            return;
+        transform.position = characterWahcing.transform.position;
+    }
+
+    public void Watch(Character cht)
+    {
+        characterWahcing = cht;
+    }
 }

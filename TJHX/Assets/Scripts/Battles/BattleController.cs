@@ -1,18 +1,15 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class BattleController : MonoBehaviour
+public class BattleController : Singleton<BattleController>
 {
-
-    // Use this for initialization
-    void Start()
+    [SerializeField] private BattleCamera m_BattleCamera;
+    public BattleCamera Cam
     {
-
+        get
+        {
+            return m_BattleCamera;
+        }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
 }

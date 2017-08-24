@@ -17,14 +17,14 @@ public struct Point
 
     public Point(Vector2 v)
     {
-        this.x = (int)v.x;
-        this.y = (int)(v.y / 2) - 1;
+        this.x = (int)v.x - 1;
+        this.y = (int)(v.y) - 1;
     }
 
     public Point(Vector3 v)
     {
-        this.x = (int)v.x;
-        this.y = (int)(v.z / 2) - 1;
+        this.x = (int)v.x - 1;
+        this.y = (int)(v.z) - 1;
     }
 
     public readonly static Point Up = new Point(0, 1);
@@ -65,12 +65,12 @@ public struct Point
 
     public Vector3 ToVector3()
     {
-        return new Vector3(x, 0, (y + 1) * 2);
+        return new Vector3(x + 1, 0, (y + 1));
     }
 
     public Vector3 ToVector3(float axisY)
     {
-        return new Vector3(x, axisY, (y + 1) * 2);
+        return new Vector3(x + 1, axisY, (y + 1));
     }
 }
 

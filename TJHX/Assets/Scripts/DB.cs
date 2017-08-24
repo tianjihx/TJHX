@@ -53,6 +53,8 @@ public class DB
 
     public static bool[,] LoadBattleMapGrid(string sceneName)
     {
+        System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+        sw.Start();
         string sql = $"select * from BattleMap where SceneName='{sceneName}'";
         var result = Self.conn.Query(sql).ToArray();
         if (result.Length == 0)
@@ -65,19 +67,23 @@ public class DB
         for (int i = 0; i < gridHexString.Length; ++i)
         {
             char hexChar = gridHexString[i];
-            short num = Convert.ToInt16(hexChar+"", 16);
+            ushort num = Convert.ToUInt16(hexChar.ToString(), 16);
+            
             int bitIndex = 0;
-            while (bitIndex < 16)
+            while (bitIndex < 4)
             {
                 if ((num & 1) == 1)
                 {
-                    int row = i * 16 + bitIndex / width;
-                    int col = i * 16 + bitIndex - row * width;
-                    map[row, col] = false;
+                    int y = (i * 4 + bitIndex) / width;
+                    int x = (i * 4 + bitIndex) - y * width;
+                    map[x, y] = true;
                 }
-                num = (short)(num >> 1);
+                num = (ushort)(num >> 1);
+                ++bitIndex;
             }
         }
+        sw.Stop();
+        Debug.Log($"加载{sceneName}场景战斗网格地图完成！耗时：{sw.ElapsedMilliseconds}ms");
         return map;
     }
 
@@ -86,22 +92,40 @@ public class DB
         int bitCount = 0;
         StringBuilder hexUnitSb = new StringBuilder();
         StringBuilder hexStringSb = new StringBuilder();
-        for (int i = 0; i < map.GetLength(0); ++i)
+        for (int y = 0; y < map.GetLength(0); ++y)
         {
-            for (int j = 0; j < map.GetLength(1); ++j)
+            for (int x = 0; x < map.GetLength(1); ++x)
             {
-                hexUnitSb.Append(map[i, j] ? '1' : '0');
+                hexUnitSb.Append(map[x, y] ? '1' : '0');
                 ++bitCount;
-                if (bitCount == 16)
+                if (bitCount == 4)
                 {
-                    short hexNum = Convert.ToInt16(hexUnitSb.ToString(), 16);
-                    hexStringSb.Append(hexNum);
+                    ushort hexNum = Convert.ToUInt16(hexUnitSb.ToString(), 2);
+                    hexStringSb.Append(Convert.ToString(hexNum, 16));
                     hexUnitSb.Clear();
                     bitCount = 0;
                 }
             }
         }
         Debug.Log(hexStringSb.ToString());
+        string sql = $"select * from BattleMap where SceneName='{sceneName}'";
+        if (Self.conn.Query(sql).ToArray().Length > 0)
+        {
+            sql = $"update BattleMap set GridString = '{hexStringSb.ToString()}' where SceneName='{sceneName}'";
+            int rowUpdate = Self.conn.Execute(sql);
+            if (rowUpdate != 1)
+            {
+                Debug.LogError("更新BattleMap发生错误！SQL:" + sql);
+            }
+            else
+            {
+                Debug.Log($"更新{sceneName}的战斗网格地图成功！");
+            }
+        }
+        else
+        {
+            Debug.LogError("不存在SceneName=" + sceneName + "的表");
+        }
     }
     
     

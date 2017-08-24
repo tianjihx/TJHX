@@ -19,6 +19,7 @@ public class Test : MonoBehaviour {
 
     public void OnShowMoveGridBtn()
     {
+        BattleController.Instance.Cam.Watch(character);
         BattleMapManager.Instance.ClearMoveGrid();
         BattleMapManager.Instance.SetMapSize(100, 100);
         BattleMapManager.Instance.Init();
