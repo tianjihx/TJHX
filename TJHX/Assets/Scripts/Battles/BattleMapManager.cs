@@ -11,105 +11,126 @@ public enum BattleMapTileType
 
 public class BattleMapManager : Singleton<BattleMapManager>
 {
-    public Transform MoveRangeContainer;
+    public Range MoveRange;
+    public Range ReachRange;
+    public Range AttackRange;
     public Transform AttackGroup;
-    public Transform ReachRangeContainer;
-    public Transform AttackRangeContainer;
+    //public Transform ReachRangeContainer;
+    //public Transform AttackRangeContainer;
 
-    public Character characterWatching;
+    public Character chtWatching;
 
-    public int mapWidth = 100;
-    public int mapHeight = 100;
-    private BattleMapTileType[,] tileTypeInMap;
-
-    private List<GameObject> moveTileGOList;
+    private bool[,] obstacleMap;
+    private Dictionary<Point, Character> characterMap;
+    
     private List<GameObject> reachTileGOList;
-
-    public void SetMapSize(int width, int height)
-    {
-        mapWidth = width;
-        mapHeight = height;
-    }
+    private List<GameObject> attackTileGOList;
+    private Point startMovePosition;
+    private Dictionary<Point, int> moveGridMap;
+    
 
     public Point GetMapSize()
     {
-        return new Point(mapWidth, mapHeight);
+        return new Point(obstacleMap.GetLength(0), obstacleMap.GetLength(1));
     }
 
     protected override void Awake()
     {
         base.Awake();
+        characterMap = new Dictionary<Point, Character>();
     }
 
-    public void Init()
+    public Character GetCharacter(Point pos)
     {
-        if (mapWidth == -1 || mapHeight == -1)
+        return GetCharacter(pos.x, pos.y);
+    }
+
+    public Character GetCharacter(int x, int y)
+    {
+        Character cht;
+        if (characterMap.TryGetValue(new Point(x, y), out cht))
         {
-            Debug.LogError("初始化战斗地图管理器前应先设置地图大小");
+            return cht;
         }
-        tileTypeInMap = new BattleMapTileType[mapWidth, mapHeight];
-        for (int i = 0; i < mapWidth; ++i)
+        else
         {
-            for (int j = 0; j < mapHeight; ++j)
-            {
-                tileTypeInMap[i, j] = BattleMapTileType.FreeMove;
-            }
+            return null;
         }
-        moveTileGOList = new List<GameObject>();
     }
 
-    public void SetMap(int x, int y, BattleMapTileType tileType)
+    public int MoveSteps
     {
-        tileTypeInMap[x, y] = tileType;
-    }
-
-    public BattleMapTileType GetMap(int x, int y)
-    {
-        return tileTypeInMap[x, y];
-    }
-
-    public void ClearMoveGrid()
-    {
-        //清除之前的移动范围GameObject
-        if (moveTileGOList == null)
-            return;
-        foreach (var moveTileGo in moveTileGOList)
+        get
         {
-            Destroy(moveTileGo);
+            return Point.Distance(chtWatching.Position, startMovePosition);
         }
-        moveTileGOList.Clear();
     }
+
+    public Point StartMovePosition
+    {
+        get
+        {
+            return startMovePosition;
+        }
+    }
+
+    public Dictionary<Point, int> MoveGridMap
+    {
+        get
+        {
+            return moveGridMap;
+        }
+    }
+
+    public void LoadMap(bool[,] map)
+    {
+        obstacleMap = map;
+    }
+
+    public bool GetMap(int x, int y)
+    {
+        return obstacleMap[x, y];
+    }
+
+    public int MapWidth { get { return obstacleMap.GetLength(0); } }
+    public int MapHeight { get { return obstacleMap.GetLength(1); } }
 
     //显示移动范围
     public void ShowMoveRange()
     {
-        if (!MoveRangeContainer.gameObject.activeSelf)
-            MoveRangeContainer.gameObject.SetActive(true);
+        MoveRange.Show();
     }
-
+    
+    //隐藏移动范围
     public void HideMoveRange()
     {
-        if (MoveRangeContainer.gameObject.activeSelf)
-            MoveRangeContainer.gameObject.SetActive(false);
+        MoveRange.Hide();
     }
 
+    //根据检测的character生成移动范围
     public void GenerateMoveGrid()
     {
-        ClearMoveGrid();
-        //Debug.Log("cht.position: "+ cht.Position);
-        uint stepMax = characterWatching.Speed / 10 + characterWatching.BaseMove;
-        Dictionary<Point, uint> result = new Dictionary<Point, uint>();
-        BFSFindMoveGrid(characterWatching.Position, 0, stepMax, result);
-        foreach (var pair in result)
+        if (moveGridMap == null)
+            moveGridMap = new Dictionary<Point, int>();
+        else
+            moveGridMap.Clear();
+        MoveRange.Clear();
+        
+        BFSFindMoveGrid(chtWatching.Position, 0, chtWatching.StepMax, moveGridMap);
+        foreach (var pair in moveGridMap)
         {
-            //Debug.Log(pair);
-            var moveTileGO = ResourcesManager.CreateByRid(R.Prefab.MoveTile, MoveRangeContainer);
-            moveTileGO.transform.position = pair.Key.ToVector3();
-            moveTileGOList.Add(moveTileGO);
+            MoveRange.Add(pair.Key.x, pair.Key.y, Space.World);
         }
     }
 
-    private void BFSFindMoveGrid(Point currentPos, uint stepsMoved, uint stepMax, Dictionary<Point, uint> result)
+    /// <summary>
+    /// 宽搜地图，寻找能到达的点
+    /// </summary>
+    /// <param name="currentPos">当前搜索的点</param>
+    /// <param name="stepsMoved">已经移动的步数</param>
+    /// <param name="stepMax">最大可以移动的步数</param>
+    /// <param name="result">保存能到达的点的集合</param>
+    private void BFSFindMoveGrid(Point currentPos, int stepsMoved, int stepMax, Dictionary<Point, int> result)
     {
         if (!result.ContainsKey(currentPos))
             result.Add(currentPos, stepsMoved);
@@ -142,82 +163,77 @@ public class BattleMapManager : Singleton<BattleMapManager>
 
     }
 
-    private bool IsMoveable(Point pos)
+    //判断指定的pos是否没有障碍物并且没有别的角色可以到达
+    public bool IsMoveable(Point pos)
     {
-        if (tileTypeInMap[pos.x, pos.y] == BattleMapTileType.FreeMove)
+        if (!obstacleMap[pos.x, pos.y] && GetCharacter(pos) == null)
             return true;
         else
             return false;
     }
 
+    //根据检测的character生成武器选择范围
+    public void GenerateWeaponReachRange()
+    {
+        ReachRange.Load(chtWatching.weaponArmed.ReachRange);
+        ReachRange.LocalPosition = - chtWatching.weaponArmed.ReachCenter;
+    }
+
     public void ShowWeaponReachRange()
     {
-        if (reachTileGOList == null)
-        {
-            reachTileGOList = new List<GameObject>();
-        }
-        if (reachTileGOList.Count != 0)
-            return;
-        Character cht = characterWatching;
-        AttackGroup.position = cht.Position.ToVector3() + Tool.Direction2Point(cht.Direction).ToVector3();
-        #region test_data
-        cht.weaponArmed = new Weapon();
-        cht.weaponArmed.AttackRange = new bool[,]
-        {
-            { true, true, true},
-            { false, true, true}
-        };
-        #endregion
-        int middlePos = cht.weaponArmed.AttackRange.GetLength(0) / 2;
-        for (int i = 0; i < cht.weaponArmed.AttackRange.GetLength(0); ++i)
-        {
-            for (int j = 0; j < cht.weaponArmed.AttackRange.GetLength(1); ++j)
-            {
-                if (!cht.weaponArmed.AttackRange[i, j])
-                    continue;
-                var reachGO = ResourcesManager.CreateByRid(R.Prefab.ReachTile, ReachRangeContainer);
-                if (cht.Direction == DirectionType.Up)
-                    reachGO.transform.localPosition = new Point(middlePos - j, i).ToVector3();
-                else if (cht.Direction == DirectionType.Right)
-                    reachGO.transform.localPosition = new Point(i, j - middlePos).ToVector3();
-                else if (cht.Direction == DirectionType.Down)
-                    reachGO.transform.localPosition = - new Point(middlePos - j, i).ToVector3();
-                else if (cht.Direction == DirectionType.Left)
-                    reachGO.transform.localPosition = - new Point(i, j - middlePos).ToVector3();
-                reachTileGOList.Add(reachGO);
-            }
-        }
+        ReachRange.Show();
     }
 
     public void HideWeaponReachRange()
     {
-        if (reachTileGOList.Count == 0)
-            return;
-        Tool.ClearAndDestoryGO(reachTileGOList);
+        ReachRange.Hide();
+    }
+
+    public void GenerateAttackRange()
+    {
+        AttackRange.Load(chtWatching.weaponArmed.AttackRange);
+    }
+
+    public void ShowAttackRange()
+    {
+        AttackRange.Show();
+    }
+
+    public void HideAttackRange()
+    {
+        AttackRange.Hide();
     }
 
     public void WatchCharacter(Character cht)
     {
-        characterWatching = cht;
+        chtWatching = cht;
+        startMovePosition = cht.Position;
     }
 
     private void Update()
     {
-        if (characterWatching == null)
+        if (chtWatching == null)
             return;
-        switch (characterWatching.status)
+        switch (chtWatching.status)
         {
             case CharacterStatus.Idle:
                 ShowMoveRange();
                 ShowWeaponReachRange();
+                HideAttackRange();
+                AttackGroup.transform.position = chtWatching.Position.ToVector3();
+                AttackGroup.transform.rotation = Tool.Direction2Rotation(chtWatching.Direction);
                 break;
             case CharacterStatus.Moving:
                 HideWeaponReachRange();
                 break;
             case CharacterStatus.ChooseTarget:
                 HideMoveRange();
+                ShowAttackRange();
+                AttackRange.LocalPosition = chtWatching.AimTarget - chtWatching.weaponArmed.AttackCenter;
                 break;
             case CharacterStatus.Attacking:
+                HideAttackRange();
+                HideWeaponReachRange();
                 break;
         }
     }
@@ -230,27 +246,17 @@ public class BattleMapManager : Singleton<BattleMapManager>
     {
         if (debug)
         {
-
-            for (int i = 0; i < mapWidth; ++i)
-            {
-                for (int j = 0; j < mapHeight; ++j)
-                {
-                    if (tileTypeInMap[i, j] == BattleMapTileType.Enemy)
-                    {
-                        GizmosDrawX(new Point(i, j), new Color(1.0f, 0, 0, 0.5f));
-                    }
-                }
-            }
+            
         }
     }
 
     void GizmosDrawX(Point pos, Color color)
     {
         Gizmos.color = color;
-        Vector3 leftDown = pos.ToVector3() + new Vector3(-0.5f, 0, -1);
-        Vector3 rightUp = pos.ToVector3() + new Vector3(0.5f, 0, 1);
-        Vector3 leftUp = pos.ToVector3() + new Vector3(-0.5f, 0, 1);
-        Vector3 rightDown = pos.ToVector3() + new Vector3(0.5f, 0, -1);
+        Vector3 leftDown = pos.ToVector3() + new Vector3(-0.5f, 0, -0.5f);
+        Vector3 rightUp = pos.ToVector3() + new Vector3(0.5f, 0, 0.5f);
+        Vector3 leftUp = pos.ToVector3() + new Vector3(-0.5f, 0, 0.5f);
+        Vector3 rightDown = pos.ToVector3() + new Vector3(0.5f, 0, -0.5f);
         Gizmos.DrawLine(rightUp, leftDown);
         Gizmos.DrawLine(leftUp, rightDown);
 

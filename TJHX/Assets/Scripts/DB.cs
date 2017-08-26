@@ -58,7 +58,10 @@ public class DB
         string sql = $"select * from BattleMap where SceneName='{sceneName}'";
         var result = Self.conn.Query(sql).ToArray();
         if (result.Length == 0)
+        {
+            Debug.LogError($"没有找到场景{sceneName}的战斗网格地图！");
             return null;
+        }
         var mapData = result[0];
         int width = mapData.Width;
         int height = mapData.Height;

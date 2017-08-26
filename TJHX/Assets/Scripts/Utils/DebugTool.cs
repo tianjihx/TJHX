@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using UnityEditor;
 using UnityEngine;
 
 [ExecuteInEditMode]
@@ -29,7 +28,6 @@ class DebugTool : MonoBehaviour
         _instance = GetComponent<DebugTool>();
     }
 
-    [MenuItem("工具/显示地形网格")]
     public static void ShowGrid()
     {
         GameObject ground = GameObject.FindGameObjectWithTag("Ground");

@@ -15,21 +15,45 @@ public class BattleInputContoller : MonoBehaviour {
 	void Update () {
         if (heroCurrentControl == null)
             return;
-		if (Input.GetKey(KeyCode.DownArrow))
+        if (heroCurrentControl.status == CharacterStatus.Idle)
         {
-            heroCurrentControl.MoveStep(DirectionType.Down);
+            if (Input.GetKey(KeyCode.DownArrow))
+                heroCurrentControl.MoveStep(DirectionType.Down);
+            else if (Input.GetKey(KeyCode.LeftArrow))
+                heroCurrentControl.MoveStep(DirectionType.Left);    
+            else if (Input.GetKey(KeyCode.UpArrow))
+                heroCurrentControl.MoveStep(DirectionType.Up);    
+            else if (Input.GetKey(KeyCode.RightArrow))
+                heroCurrentControl.MoveStep(DirectionType.Right);
+
+            if (Input.GetKeyDown(KeyCode.Z))
+            {
+                heroCurrentControl.ChooseTarget();
+            }
         }
-        else if (Input.GetKey(KeyCode.LeftArrow))
+        else if (heroCurrentControl.status == CharacterStatus.ChooseTarget)
         {
-            heroCurrentControl.MoveStep(DirectionType.Left);
+            if (Input.GetKey(KeyCode.DownArrow))
+                heroCurrentControl.MoveTargetRange(DirectionType.Down);
+            else if (Input.GetKey(KeyCode.LeftArrow))
+                heroCurrentControl.MoveTargetRange(DirectionType.Left);
+            else if (Input.GetKey(KeyCode.UpArrow))
+                heroCurrentControl.MoveTargetRange(DirectionType.Up);
+            else if (Input.GetKey(KeyCode.RightArrow))
+                heroCurrentControl.MoveTargetRange(DirectionType.Right);
+
+            if (Input.GetKeyDown(KeyCode.Z))
+            {
+                heroCurrentControl.WeaponAttack();
+            }
         }
-        else if (Input.GetKey(KeyCode.UpArrow))
+
+        
+
+
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
-            heroCurrentControl.MoveStep(DirectionType.Up);
-        }
-        else if (Input.GetKey(KeyCode.RightArrow))
-        {
-            heroCurrentControl.MoveStep(DirectionType.Right);
+            heroCurrentControl.BackCommand();
         }
     }
 }

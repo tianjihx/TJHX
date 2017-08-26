@@ -18,7 +18,9 @@ public class Weapon : MonoBehaviour
     public int AdditiveDebuff;
 
     public bool[,] ReachRange;
+    public Point ReachCenter;
     public bool[,] AttackRange;
+    public Point AttackCenter;
     public float[,] AttackPowerRate;
     public float[,] AttackHitRate;
 }

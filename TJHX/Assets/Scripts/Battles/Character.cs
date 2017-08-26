@@ -6,26 +6,29 @@ using UnityEngine.AI;
 
 public enum CharacterStatus
 {
-    Idle, Moving, ChooseTarget, Attacking
+    Idle, Moving, ChooseTarget, ConfirmAttack, Attacking
 }
 
 public class Character : MonoBehaviour {
 
-    public uint HP;
-    public uint MP;
-    public uint EP;
-    public uint Attack;
-    public uint Defend;
-    public uint Agility;
-    public uint Intelligence;
-    public uint BaseMove;
-    public uint Speed;
-    public uint Luck;
+    public int HP;
+    public int MP;
+    public int EP;
+    public int Attack;
+    public int Defend;
+    public int Agility;
+    public int Intelligence;
+    public int BaseMove;
+    public int Speed;
+    public int Luck;
 
     public Weapon weaponArmed;
 
     public CharacterStatus status;
 
+    public Point AimTarget;
+
+    private bool moveTargetRangeCD;
     
 
     #region Properties
@@ -63,12 +66,21 @@ public class Character : MonoBehaviour {
             transform.rotation = Tool.Direction2Rotation(_direction);
         }
     }
+
+    public int StepMax
+    {
+        get
+        {
+            return Speed / 10 + BaseMove;
+        }
+    }
     #endregion
 
     private void Awake()
     {
         _position = new Point(transform.position);
         _direction = DirectionType.Down;
+        moveTargetRangeCD = false;
     }
 
     
@@ -82,22 +94,28 @@ public class Character : MonoBehaviour {
             TurnTo(direction);
             return;
         }
+        Point moveDelta = Point.Zero;
         switch (direction)
         {
             case DirectionType.Left:
-                Position += Point.Left;
+                moveDelta = Point.Left;
                 break;
             case DirectionType.Up:
-                Position += Point.Up;
+                moveDelta = Point.Up;
                 break;
             case DirectionType.Right:
-                Position += Point.Right; 
+                moveDelta = Point.Right; 
                 break;
             case DirectionType.Down:
-                Position += Point.Down;
+                moveDelta = Point.Down;
                 break;
         }
-        
+        Point expectPosition = Position + moveDelta;
+        if (BattleMapManager.Instance.IsMoveable(expectPosition) &&
+            BattleMapManager.Instance.MoveGridMap.ContainsKey(expectPosition))
+        {
+            Position += moveDelta;
+        }
     }
 
 
@@ -115,5 +133,82 @@ public class Character : MonoBehaviour {
     public void MoveTo(Point destPos)
     {
 
+    }
+
+    public void ChooseTarget()
+    {
+        status = CharacterStatus.ChooseTarget;
+        AimTarget = Point.Zero;
+    }
+
+    public void MoveTargetRange(DirectionType keyDirection)
+    {
+        if (moveTargetRangeCD)
+            return;
+        moveTargetRangeCD = true;
+        Point localDirection = Point.Zero;
+        switch (Direction)
+        {
+            case DirectionType.Down:
+                switch (keyDirection)
+                {
+                    case DirectionType.Down: localDirection = Point.Up; break;
+                    case DirectionType.Right: localDirection = Point.Left; break;
+                    case DirectionType.Up: localDirection = Point.Down; break;
+                    case DirectionType.Left: localDirection = Point.Right; break;
+                }
+                break;
+            case DirectionType.Left:
+                switch (keyDirection)
+                {
+                    case DirectionType.Down: localDirection = Point.Left; break;
+                    case DirectionType.Right: localDirection = Point.Down; break;
+                    case DirectionType.Up: localDirection = Point.Right; break;
+                    case DirectionType.Left: localDirection = Point.Up; break;
+                }
+                break;
+            case DirectionType.Up:
+                switch (keyDirection)
+                {
+                    case DirectionType.Down: localDirection = Point.Down; break;
+                    case DirectionType.Right: localDirection = Point.Right; break;
+                    case DirectionType.Up: localDirection = Point.Up; break;
+                    case DirectionType.Left: localDirection = Point.Left; break;
+                }
+                break;
+            case DirectionType.Right:
+                switch (keyDirection)
+                {
+                    case DirectionType.Down: localDirection = Point.Right; break;
+                    case DirectionType.Right: localDirection = Point.Up; break;
+                    case DirectionType.Up: localDirection = Point.Left; break;
+                    case DirectionType.Left: localDirection = Point.Down; break;
+                }
+                break;
+        }
+        Point expectAimTarget = AimTarget + localDirection + weaponArmed.ReachCenter;
+        var reachPointSet = BattleMapManager.Instance.ReachRange.GetPointSet();
+        if (reachPointSet.Contains(expectAimTarget))
+        {
+            AimTarget += localDirection;
+        }
+        Timer.New(() =>
+        {
+            moveTargetRangeCD = false;
+        }, 0.05f).Run();
+    }
+
+    public void WeaponAttack()
+    {
+        status = CharacterStatus.Attacking;
+        GetComponentInChildren<Animator>().SetTrigger("Attack");
+    }
+
+    public void BackCommand()
+    {
+        if (status == CharacterStatus.ChooseTarget)
+        {
+            status = CharacterStatus.Idle;
+        }
     }
 }

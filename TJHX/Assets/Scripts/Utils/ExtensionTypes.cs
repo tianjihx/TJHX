@@ -27,6 +27,21 @@ public struct Point
         this.y = (int)(v.z) - 1;
     }
 
+    public Point(Vector3 v, bool withOffset)
+    {
+        if (withOffset)
+        {
+            this.x = (int)v.x - 1;
+            this.y = (int)(v.z) - 1;
+        }
+        else
+        {
+            this.x = (int)v.x;
+            this.y = (int)(v.z);
+        }
+        
+    }
+
     public readonly static Point Up = new Point(0, 1);
     public readonly static Point Left = new Point(-1, 0);
     public readonly static Point Down = new Point(0, -1);
@@ -71,6 +86,16 @@ public struct Point
     public Vector3 ToVector3(float axisY)
     {
         return new Vector3(x + 1, axisY, (y + 1));
+    }
+
+    public Vector3 ToVector3WithoutOffset()
+    {
+        return new Vector3(x, 0, y);
+    }
+
+    public static int Distance(Point p1, Point p2)
+    {
+        return Mathf.Abs(p1.x - p2.x) + Mathf.Abs(p1.y - p2.y);
     }
 }
 

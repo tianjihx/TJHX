@@ -8,10 +8,10 @@ using UnityEngine.Events;
 
 class Tool
 {
-    private readonly static Quaternion LeftRotation = Quaternion.Euler(new Vector3(0, 90, 0));
-    private readonly static Quaternion RightRotation = Quaternion.Euler(new Vector3(0, 180, 0));
-    private readonly static Quaternion UpRotation = Quaternion.Euler(new Vector3(0, 270, 0));
-    private readonly static Quaternion DownRotation = Quaternion.Euler(new Vector3(0, 0, 0));
+    private readonly static Quaternion LeftRotation = Quaternion.Euler(new Vector3(0, 270, 0));
+    private readonly static Quaternion RightRotation = Quaternion.Euler(new Vector3(0, 90, 0));
+    private readonly static Quaternion UpRotation = Quaternion.Euler(new Vector3(0, 0, 0));
+    private readonly static Quaternion DownRotation = Quaternion.Euler(new Vector3(0, 180, 0));
 
     public static Quaternion Direction2Rotation(DirectionType direction)
     {
@@ -20,9 +20,9 @@ class Tool
             case DirectionType.Left:
                 return LeftRotation;
             case DirectionType.Up:
-                return RightRotation;
-            case DirectionType.Right:
                 return UpRotation;
+            case DirectionType.Right:
+                return RightRotation;
             case DirectionType.Down:
                 return DownRotation;
         }
@@ -47,10 +47,13 @@ class Tool
 
     public static void ClearAndDestoryGO<T>(List<T> list) where T : MonoBehaviour
     {
+        if (list == null)
+            return;
         foreach (T t in list)
         {
             GameObject.Destroy(t.gameObject);
         }
+        list.Clear();
     }
 
     public static void ClearAndDestoryGO(List<GameObject> list)
@@ -62,6 +65,12 @@ class Tool
             GameObject.Destroy(go);
         }
         list.Clear();
+    }
+
+    public static void EnsureNotNull<T>(ref T t) where T : new()
+    {
+        if (t == null)
+            t = new T();
     }
 }
 

@@ -35,7 +35,7 @@ class BattleGridEditor : Editor
             {
                 Tools.lockedLayers = ~0;
                 SceneView.currentDrawingSceneView.orthographic = true;
-                lookAtPosition = new Vector3(battleMap.mapWidth / 2, 0, battleMap.mapHeight / 2);
+                lookAtPosition = new Vector3(width / 2, 0, height / 2);
                 SceneView.currentDrawingSceneView.LookAt(lookAtPosition, Quaternion.Euler(90, 0, 0));
             }
             else
@@ -181,7 +181,7 @@ class BattleGridEditor : Editor
         posInSceneView.y = SceneView.lastActiveSceneView.position.height - posInSceneView.y;
         posInSceneView.x = Mathf.Clamp(posInSceneView.x, 0, SceneView.currentDrawingSceneView.position.width - 1);
         posInSceneView.y = Mathf.Clamp(posInSceneView.y, 0, SceneView.currentDrawingSceneView.position.height - 1);
-        Debug.Log(posInSceneView);
+        //Debug.Log(posInSceneView);
         if (!viewCam.pixelRect.Contains(posInSceneView))
             return;
         if (Physics.Raycast(viewCam.ScreenPointToRay(posInSceneView), out hit, 1000, 1 << LayerMask.NameToLayer("Ground")))
