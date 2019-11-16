@@ -34,11 +34,11 @@ public class BattleMapManager : Singleton<BattleMapManager>
         return new Point(obstacleMap.GetLength(0), obstacleMap.GetLength(1));
     }
 
-    protected override void Awake()
-    {
-        base.Awake();
-        characterMap = new Dictionary<Point, Character>();
-    }
+    //protected override void Awake()
+    //{
+    //    base.Awake();
+    //    characterMap = new Dictionary<Point, Character>();
+    //}
 
     public Character GetCharacter(Point pos)
     {

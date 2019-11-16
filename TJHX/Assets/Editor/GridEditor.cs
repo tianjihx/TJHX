@@ -24,7 +24,7 @@ class BattleGridEditor : Editor
 
     private void OnSceneGUI()
     {
-        BattleMapManager battleMap = target as BattleMapManager;
+        //BattleMapManager battleMap = target as BattleMapManager;
 
         Handles.BeginGUI();
         GUILayout.BeginArea(new Rect(20, 20, 100, 400));

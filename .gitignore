@@ -38,3 +38,6 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+/TJHX/obj/Debug
+/TJHX/Assets/_TerrainAutoUpgrade
+/TJHX/Assets/_TerrainAutoUpgrade.meta
